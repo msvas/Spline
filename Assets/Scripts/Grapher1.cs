@@ -9,6 +9,9 @@ public class Grapher1 : MonoBehaviour {
 
     public TextAsset curvePoints;
 
+    [Range(10, 100)]
+    public int resolution = 10;
+
     private LineRenderer line;
     private List<Vector3> linePoints;
     private List<Vector3> pointsFromFile;
@@ -23,10 +26,10 @@ public class Grapher1 : MonoBehaviour {
         line.SetWidth(0.2F, 0.2F);
     }
 
-    private void CreatePoint(int id, float x, float y) {
+    private void CreatePoint(float x, float y) {
         Vector3 newPoint = new Vector3(x, y, 0f);
         linePoints.Add(newPoint);
-        line.SetPosition(id, newPoint);
+        line.SetPosition(linePoints.Count - 1, newPoint);
     }
 
     private void ReadPointsFromFile() {
@@ -34,7 +37,7 @@ public class Grapher1 : MonoBehaviour {
         string[] fLines = text.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
 
         pointsTotal = fLines.Length;
-        line.SetVertexCount((pointsTotal - 3)*10);
+        line.SetVertexCount((pointsTotal - 3) * resolution);
 
         for (int i = 0; i < fLines.Length; i++) {
             string valueLine = fLines[i];
@@ -62,16 +65,11 @@ public class Grapher1 : MonoBehaviour {
 
         Vector3 lastPos = new Vector3(0, 0, 0);
 
-        for (float t = 0; t < 1; t += 0.1f) {
+        float increment = (100 / resolution) * 0.01f;
+
+        for (float t = 0; t < 1; t += increment) {
             Vector3 newPos = calculatePoints(t, p0, p1, p2, p3);
-
-            if (t == 0) {
-                lastPos = newPos;
-                continue;
-            }
-
-            CreatePoint((int)(id + (t * 10)), newPos.x, newPos.y);
-            lastPos = newPos;
+            CreatePoint(newPos.x, newPos.y);
         }
     }
 
@@ -86,7 +84,7 @@ public class Grapher1 : MonoBehaviour {
     }
 
     void Update() {
-        if (linePoints.Count < (pointsTotal - 3)*10) {
+        if (linePoints.Count < (pointsTotal - 3) * resolution) {
             PerformSpline();
         }
     }
