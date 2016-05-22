@@ -65,11 +65,13 @@ public class Grapher1 : MonoBehaviour {
 
         Vector3 lastPos = new Vector3(0, 0, 0);
 
-        float increment = (100 / resolution) * 0.01f;
+        float increment = (1f / resolution);
 
-        for (float t = 0; t < 1; t += increment) {
+        float t = 0;
+        for (int i = 0; i < resolution; i++) {
             Vector3 newPos = calculatePoints(t, p0, p1, p2, p3);
             CreatePoint(newPos.x, newPos.y);
+            t += increment;
         }
     }
 
