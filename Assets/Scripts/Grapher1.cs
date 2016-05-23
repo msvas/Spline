@@ -85,6 +85,17 @@ public class Grapher1 : MonoBehaviour {
         }
     }
 
+    public Vector3 GetPoint(float t) {
+        int segmentNumber = Mathf.FloorToInt(t);
+
+        Vector3 p0 = pointsFromFile[segmentNumber - 1];
+        Vector3 p1 = pointsFromFile[segmentNumber];
+        Vector3 p2 = pointsFromFile[segmentNumber + 1];
+        Vector3 p3 = pointsFromFile[segmentNumber + 2];
+
+        return calculatePoints(t - segmentNumber, p0, p1, p2, p3);
+    }
+
     void Update() {
         if (linePoints.Count < (pointsTotal - 3) * resolution) {
             PerformSpline();

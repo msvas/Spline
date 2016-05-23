@@ -261,7 +261,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   curvePoints: {fileID: 0}
-  resolution: 100
+  resolution: 54
 --- !u!4 &1286878025
 Transform:
   m_ObjectHideFlags: 0
