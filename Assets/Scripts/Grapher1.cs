@@ -93,12 +93,20 @@ public class Grapher1 : MonoBehaviour {
         if (ready) {
             int segmentNumber = Mathf.FloorToInt(t);
 
-            Vector3 p0 = pointsFromFile[segmentNumber - 1];
-            Vector3 p1 = pointsFromFile[segmentNumber];
-            Vector3 p2 = pointsFromFile[segmentNumber + 1];
-            Vector3 p3 = pointsFromFile[segmentNumber + 2];
+            if (segmentNumber > pointsFromFile.Count - 3)
+                return new Vector3(0, 0, 0);
 
-            return calculatePoints(t - segmentNumber, p0, p1, p2, p3);
+            if ((segmentNumber != 0 && segmentNumber != (pointsTotal - 2) && segmentNumber != (pointsTotal - 1))) {
+
+                Vector3 p0 = pointsFromFile[segmentNumber - 1];
+                Vector3 p1 = pointsFromFile[segmentNumber];
+                Vector3 p2 = pointsFromFile[segmentNumber + 1];
+                Vector3 p3 = pointsFromFile[segmentNumber + 2];
+
+                return calculatePoints(t - segmentNumber, p0, p1, p2, p3);
+            }
+            else
+                return new Vector3(0, 0, 0);
         } else {
             return new Vector3(0, 0, 0);
         }
