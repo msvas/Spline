@@ -16,6 +16,8 @@ public class Grapher1 : MonoBehaviour {
     private List<Vector3> linePoints;
     private List<Vector3> pointsFromFile;
 
+    private bool ready = false;
+
     void Start() {
         curvePoints = Resources.Load("pointsdata") as TextAsset;
         linePoints = new List<Vector3>();
@@ -77,6 +79,8 @@ public class Grapher1 : MonoBehaviour {
 
     private void PerformSpline() {
         ReadPointsFromFile();
+
+        ready = true;
  
         for (int i = 0; i < pointsTotal; i++) {
             if ((i != 0 && i != (pointsTotal - 2) && i != (pointsTotal - 1))) {
@@ -86,14 +90,18 @@ public class Grapher1 : MonoBehaviour {
     }
 
     public Vector3 GetPoint(float t) {
-        int segmentNumber = Mathf.FloorToInt(t);
+        if (ready) {
+            int segmentNumber = Mathf.FloorToInt(t);
 
-        Vector3 p0 = pointsFromFile[segmentNumber - 1];
-        Vector3 p1 = pointsFromFile[segmentNumber];
-        Vector3 p2 = pointsFromFile[segmentNumber + 1];
-        Vector3 p3 = pointsFromFile[segmentNumber + 2];
+            Vector3 p0 = pointsFromFile[segmentNumber - 1];
+            Vector3 p1 = pointsFromFile[segmentNumber];
+            Vector3 p2 = pointsFromFile[segmentNumber + 1];
+            Vector3 p3 = pointsFromFile[segmentNumber + 2];
 
-        return calculatePoints(t - segmentNumber, p0, p1, p2, p3);
+            return calculatePoints(t - segmentNumber, p0, p1, p2, p3);
+        } else {
+            return new Vector3(0, 0, 0);
+        }
     }
 
     void Update() {
