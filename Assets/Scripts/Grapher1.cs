@@ -9,12 +9,16 @@ public class Grapher1 : MonoBehaviour {
 
     public TextAsset curvePoints;
 
+    private ParticleSystem.Particle[] radiusPoints;
+
     [Range(10, 100)]
     public int resolution = 10;
 
-    private LineRenderer line;
-    private List<Vector3> linePoints;
-    private List<Vector3> pointsFromFile;
+    private LineRenderer line;                      // line rendered on visual space
+    private List<Vector3> linePoints;               // all points rendered on space, after catmull-rom processing
+    private List<Vector3> pointsFromFile;           // simple points read from file
+    private List<float> allRadius;                  // radius from each set of 3 points
+    private List<Vector3> radiusPos;
 
     private bool ready = false;
 
@@ -28,8 +32,8 @@ public class Grapher1 : MonoBehaviour {
         line.SetWidth(0.2F, 0.2F);
     }
 
-    private void CreatePoint(float x, float y) {
-        Vector3 newPoint = new Vector3(x, y, 0f);
+    private void CreatePoint(float x, float y, float z) {
+        Vector3 newPoint = new Vector3(x, y, z);
         linePoints.Add(newPoint);
         line.SetPosition(linePoints.Count - 1, newPoint);
     }
@@ -43,8 +47,8 @@ public class Grapher1 : MonoBehaviour {
 
         for (int i = 0; i < fLines.Length; i++) {
             string valueLine = fLines[i];
-            string[] pointsRead = Regex.Split(valueLine, " ");
-            pointsFromFile.Add(new Vector3(float.Parse(pointsRead[0]), float.Parse(pointsRead[1]), 0f));
+            string[] pointsRead = Regex.Split(valueLine, @"\s+");
+            pointsFromFile.Add(new Vector3(float.Parse(pointsRead[0]), float.Parse(pointsRead[1]), float.Parse(pointsRead[2])));
         }
     }
 
@@ -72,7 +76,7 @@ public class Grapher1 : MonoBehaviour {
         float t = 0;
         for (int i = 0; i < resolution; i++) {
             Vector3 newPos = calculatePoints(t, p0, p1, p2, p3);
-            CreatePoint(newPos.x, newPos.y);
+            CreatePoint(newPos.x, newPos.y, newPos.z);
             t += increment;
         }
     }
@@ -112,9 +116,94 @@ public class Grapher1 : MonoBehaviour {
         }
     }
 
+    private float GetRadius(Vector3 p1, Vector3 p2, Vector3 p3) {
+        float radius = 0;
+        Vector3 intersection = new Vector3();
+
+        Vector3 normal = Vector3.Cross(p2 - p1, p3 - p2);
+        Vector3 midp1 = 0.5f * (p1 + p2);
+        Vector3 midp2 = 0.5f * (p2 + p3);
+
+        Vector3 axis1 = Vector3.Cross((p2 - p1), normal);
+        Vector3 axis2 = Vector3.Cross((p3 - p2), normal);
+
+        if (LineLineIntersection(out intersection, midp1, axis1, midp2, axis2)) {
+            radius = Vector3.Magnitude(intersection - midp1);
+            radiusPos.Add(intersection);
+        }
+        return radius;
+    }
+    
+    //Calculate the intersection point of two lines. Returns true if lines intersect, otherwise false.
+    private bool LineLineIntersection(out Vector3 intersection, Vector3 linePoint1, Vector3 lineVec1, Vector3 linePoint2, Vector3 lineVec2) {
+
+        Vector3 lineVec3 = linePoint2 - linePoint1;
+        Vector3 crossVec1and2 = Vector3.Cross(lineVec1, lineVec2);
+        Vector3 crossVec3and2 = Vector3.Cross(lineVec3, lineVec2);
+
+        float planarFactor = Vector3.Dot(lineVec3, crossVec1and2);
+
+        //is coplanar, and not parrallel
+        if (Mathf.Abs(planarFactor) < 0.0001f && crossVec1and2.sqrMagnitude > 0.0001f) {
+            float s = Vector3.Dot(crossVec3and2, crossVec1and2) / crossVec1and2.sqrMagnitude;
+            intersection = linePoint1 + (lineVec1 * s);
+            return true;
+        } else {
+            intersection = Vector3.zero;
+            return false;
+        }
+    }
+
+    public void GetAllRadius() {
+        allRadius = new List<float>();
+        radiusPos = new List<Vector3>();
+        int i = 0;
+        int k = 2;
+        while(k != linePoints.Count) { 
+            float radius = GetRadius(linePoints[i], linePoints[Mathf.FloorToInt(k / 2)], linePoints[k]);
+
+            if(radius == 0) {
+                k++;
+            } else {
+                Debug.Log(linePoints[i]);
+                Debug.Log(linePoints[Mathf.FloorToInt(k / 2)]);
+                Debug.Log(linePoints[k]);
+                Debug.Log("res: " + radius);
+                allRadius.Add(radius);
+                i = k;
+            }
+        }
+    }
+
+    private void PlotRadius() {
+        radiusPoints = new ParticleSystem.Particle[allRadius.Count];
+        for(int i = 0; i < allRadius.Count; i++) {
+            radiusPoints[i].position = radiusPos[i];
+            radiusPoints[i].startColor = new Color(10f, 0f, 0f);
+            radiusPoints[i].startSize = 0.5f;
+        }
+        GetComponent<ParticleSystem>().SetParticles(radiusPoints, radiusPoints.Length);
+
+    }
+
     void Update() {
         if (linePoints.Count < (pointsTotal - 3) * resolution) {
             PerformSpline();
+            GetAllRadius();
+            PlotRadius();
         }
+        /*
+        Vector3 intPnt = new Vector3();
+        Vector3 p1 = new Vector3(0, 0, 0);
+        Vector3 p2 = new Vector3(1, 1, 0);
+        Vector3 p3 = new Vector3(3, 0, 0);
+        Vector3 midp1 = 0.5f * (p1 + p2);
+        Vector3 midp2 = 0.5f * (p2 + p3);
+        Vector3 normal = Vector3.Cross(p2 - p1, p3 - p2);
+        Vector3 axis1 = Vector3.Cross((p2 - p1), normal);
+        Vector3 axis2 = Vector3.Cross((p3 - p2), normal);
+        LineLineIntersection(out intPnt, midp1, axis1, midp2, axis2);
+        Debug.Log("Res: " + intPnt);
+        */
     }
 }
