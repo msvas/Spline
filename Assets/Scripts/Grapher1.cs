@@ -131,6 +131,7 @@ public class Grapher1 : MonoBehaviour {
 
         if (LineLineIntersection(out intersection, midp1, axis1, midp2, axis2)) {
             radius = Vector3.Magnitude(intersection - midp1);
+            Debug.Log("int:" + intersection);
             radiusPos.Add(intersection);
         }
         return radius;
@@ -146,7 +147,7 @@ public class Grapher1 : MonoBehaviour {
         float planarFactor = Vector3.Dot(lineVec3, crossVec1and2);
 
         //is coplanar, and not parrallel
-        if (Mathf.Abs(planarFactor) < 0.0001f) {
+        if (Mathf.Abs(planarFactor) < 0.0001f && crossVec1and2.sqrMagnitude > 0.0001f) {
             float s = Vector3.Dot(crossVec3and2, crossVec1and2) / crossVec1and2.sqrMagnitude;
             intersection = linePoint1 + (lineVec1 * s);
             return true;
@@ -159,23 +160,35 @@ public class Grapher1 : MonoBehaviour {
     public void GetAllRadius() {
         allRadius = new List<float>();
         radiusPos = new List<Vector3>();
-        Vector3 firstVec;
-        Vector3 secondVec;
-        int i = 0;
-        int k = 2;
-        for (int m = 0; m < (linePoints.Count - 2); m++) {
+        Vector3 firstVec = new Vector3(0, 0, 0);
+        Vector3 secondVec = new Vector3(0, 0, 0);
+        Vector3 firstPoint = new Vector3(0, 0, 0);
+        Vector3 secondPoint = new Vector3(0, 0, 0);
+        Vector3 thirdPoint = new Vector3(0, 0, 0);
+        float angle = 0;
+        int m = 0;
+        while (m < (linePoints.Count - 2)) { 
             firstVec = linePoints[m + 1] - linePoints[m];
             secondVec = linePoints[m + 2] - linePoints[m + 1];
-            float angle = Vector3.Angle(firstVec, secondVec);
+            angle = Vector3.Angle(firstVec, secondVec);
             if (angle > angleThreshold) {
-                float radius = GetRadius(linePoints[m], linePoints[m + 1], linePoints[m + 2]);
-                allRadius.Add(radius);
-                //Vector3 firstPoint = linePoints[m];
-                Debug.Log(linePoints[m]);
-                Debug.Log(linePoints[m+1]);
-                Debug.Log(linePoints[m+2]);
-                Debug.Log("res: " + radius);
+                firstPoint = linePoints[m];
+                int l = m + 2;
+                while (angle > angleThreshold && l < (linePoints.Count - 2)) {
+                    firstVec = linePoints[l + 1] - linePoints[l];
+                    secondVec = linePoints[l + 2] - linePoints[l + 1];
+                    angle = Vector3.Angle(firstVec, secondVec);
+                    secondPoint = linePoints[Mathf.FloorToInt(l / 2)];
+                    thirdPoint = linePoints[l];
+                    l++;
+                }
+                float radius = GetRadius(firstPoint, secondPoint, thirdPoint);
+                if (radius != 0) {
+                    allRadius.Add(radius);
+                }
+                m = l;
             }
+            m++;
         }
         /*
         while (k != linePoints.Count) {
