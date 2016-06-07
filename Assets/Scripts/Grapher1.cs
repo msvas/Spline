@@ -20,6 +20,8 @@ public class Grapher1 : MonoBehaviour {
     private List<float> allRadius;                  // radius from each set of 3 points
     private List<Vector3> radiusPos;
 
+    private float angleThreshold = 3;
+
     private bool ready = false;
 
     void Start() {
@@ -144,7 +146,7 @@ public class Grapher1 : MonoBehaviour {
         float planarFactor = Vector3.Dot(lineVec3, crossVec1and2);
 
         //is coplanar, and not parrallel
-        if (Mathf.Abs(planarFactor) < 0.0001f && crossVec1and2.sqrMagnitude > 0.0001f) {
+        if (Mathf.Abs(planarFactor) < 0.0001f) {
             float s = Vector3.Dot(crossVec3and2, crossVec1and2) / crossVec1and2.sqrMagnitude;
             intersection = linePoint1 + (lineVec1 * s);
             return true;
@@ -157,22 +159,42 @@ public class Grapher1 : MonoBehaviour {
     public void GetAllRadius() {
         allRadius = new List<float>();
         radiusPos = new List<Vector3>();
+        Vector3 firstVec;
+        Vector3 secondVec;
         int i = 0;
         int k = 2;
-        while(k != linePoints.Count) { 
+        for (int m = 0; m < (linePoints.Count - 2); m++) {
+            firstVec = linePoints[m + 1] - linePoints[m];
+            secondVec = linePoints[m + 2] - linePoints[m + 1];
+            float angle = Vector3.Angle(firstVec, secondVec);
+            if (angle > angleThreshold) {
+                float radius = GetRadius(linePoints[m], linePoints[m + 1], linePoints[m + 2]);
+                allRadius.Add(radius);
+                //Vector3 firstPoint = linePoints[m];
+                Debug.Log(linePoints[m]);
+                Debug.Log(linePoints[m+1]);
+                Debug.Log(linePoints[m+2]);
+                Debug.Log("res: " + radius);
+            }
+        }
+        /*
+        while (k != linePoints.Count) {
             float radius = GetRadius(linePoints[i], linePoints[Mathf.FloorToInt(k / 2)], linePoints[k]);
 
             if(radius == 0) {
                 k++;
             } else {
+                
                 Debug.Log(linePoints[i]);
                 Debug.Log(linePoints[Mathf.FloorToInt(k / 2)]);
                 Debug.Log(linePoints[k]);
                 Debug.Log("res: " + radius);
+                
                 allRadius.Add(radius);
                 i = k;
             }
         }
+       */
     }
 
     private void PlotRadius() {
