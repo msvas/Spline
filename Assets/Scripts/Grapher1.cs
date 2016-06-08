@@ -147,7 +147,7 @@ public class Grapher1 : MonoBehaviour {
         float planarFactor = Vector3.Dot(lineVec3, crossVec1and2);
 
         //is coplanar, and not parrallel
-        if (Mathf.Abs(planarFactor) < 0.0001f && crossVec1and2.sqrMagnitude > 0.0001f) {
+        if (Mathf.Abs(planarFactor) < 0.0001f) { // && crossVec1and2.sqrMagnitude > 0.0001f) {
             float s = Vector3.Dot(crossVec3and2, crossVec1and2) / crossVec1and2.sqrMagnitude;
             intersection = linePoint1 + (lineVec1 * s);
             return true;
@@ -178,11 +178,15 @@ public class Grapher1 : MonoBehaviour {
                     firstVec = linePoints[l + 1] - linePoints[l];
                     secondVec = linePoints[l + 2] - linePoints[l + 1];
                     angle = Vector3.Angle(firstVec, secondVec);
-                    secondPoint = linePoints[Mathf.FloorToInt(l / 2)];
+                    secondPoint = linePoints[m + Mathf.FloorToInt((l - m) / 2)];
                     thirdPoint = linePoints[l];
                     l++;
                 }
                 float radius = GetRadius(firstPoint, secondPoint, thirdPoint);
+                Debug.Log(firstPoint);
+                Debug.Log(secondPoint);
+                Debug.Log(thirdPoint);
+                Debug.Log("res: " + radius);
                 if (radius != 0) {
                     allRadius.Add(radius);
                 }
