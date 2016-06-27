@@ -277,11 +277,20 @@ public class Grapher1 : MonoBehaviour {
 
     }
 
+    private void SaveFile() {
+        string content = "";
+        for (int i = 0; i < allRadius.Count; i++) {
+            content += radiusPos[i].x + " " + radiusPos[i].x + " " + radiusPos[i].x + Environment.NewLine;
+        }
+        System.IO.File.WriteAllText("output.txt", content);
+    }
+
     void Update() {
         if (linePoints.Count < (pointsTotal - 3) * resolution) {
             PerformSpline();
             GetAllRadius();
             PlotRadius();
+            SaveFile();
         }
         /*
         Vector3 intPnt = new Vector3();
