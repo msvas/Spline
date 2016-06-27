@@ -19,6 +19,7 @@ public class Grapher1 : MonoBehaviour {
     private List<Vector3> pointsFromFile;           // simple points read from file
     private List<float> allRadius;                  // radius from each set of 3 points
     private List<Vector3> radiusPos;
+    private List<Vector3> midPoints;
 
     private float angleThreshold = 3;
 
@@ -122,17 +123,27 @@ public class Grapher1 : MonoBehaviour {
         float radius = 0;
         Vector3 intersection = new Vector3();
 
-        Vector3 normal = Vector3.Cross(p2 - p1, p3 - p2);
-        Vector3 midp1 = 0.5f * (p1 + p2);
-        Vector3 midp2 = 0.5f * (p2 + p3);
+        Vector3 midp1 = (((p2 - p1) / 2f) + p1);
+        Vector3 midp2 = (((p3 - p2) / 2f) + p2);
+        Debug.Log("p1: " + p1.x + " " + p1.y);
+        Debug.Log("p2 " + p2.x + " " + p2.y);
+        Debug.Log("p3 " + p3.x + " " + p3.y);
+        Debug.Log("m1 " + midp1.x + " " + midp1.y);
+        Debug.Log("m2 " + midp2.x + " " + midp2.y);
+        Vector3 normal = Vector3.Cross(Vector3.Normalize(p2 - midp1), Vector3.Normalize(p3 - midp2));
 
-        Vector3 axis1 = Vector3.Cross((p2 - p1), normal);
-        Vector3 axis2 = Vector3.Cross((p3 - p2), normal);
+        //Debug.Log("eixo" + normal.normalized);
+        //Debug.Log("eixo" + (p3 - midp2));
+        Vector3 axis1 = Vector3.Cross(Vector3.Normalize(p2 - midp1), normal.normalized);
+        Vector3 axis2 = Vector3.Cross(Vector3.Normalize(p3 - midp2), normal.normalized);
 
         if (LineLineIntersection(out intersection, midp1, axis1, midp2, axis2)) {
             radius = Vector3.Magnitude(intersection - midp1);
-            Debug.Log("int:" + intersection);
+            //Debug.Log("radius:" + radius);
+            //Debug.Log("eixo" + axis1);
             radiusPos.Add(intersection);
+            midPoints.Add(midp1);
+            midPoints.Add(midp2);
         }
         return radius;
     }
@@ -140,6 +151,40 @@ public class Grapher1 : MonoBehaviour {
     //Calculate the intersection point of two lines. Returns true if lines intersect, otherwise false.
     private bool LineLineIntersection(out Vector3 intersection, Vector3 linePoint1, Vector3 lineVec1, Vector3 linePoint2, Vector3 lineVec2) {
 
+        /* 
+        Given two lines passing through 3D points r1=[r1x,r1y,r1z] and r2=[r2x,r2y,r2z] and 
+        having unit directions e1=[e1x,e1y,e1z] and e2=[e2x,e2y,e2z] 
+        you can find the points on the line which are closest to the other line like this:
+
+        Find the direction projection u=Dot(e1,e2)=e1x*e2x+e1y*e2y+e1z*e2z
+        If u==1 then lines are parallel. No intersection exists.
+        Find the separation projections t1=Dot(r2-r1,e1) and t2=Dot(r2-r1,e2)
+        Find distance along line1 d1 = (t1-u*t2)/(1-u*u)
+        Find distance along line2 d2 = (t2-u*t1)/(u*u-1)
+        Find the point on line1 p1=Add(r1,Scale(d1,e1))
+        Find the point on line2 p2=Add(r2,Scale(d2,e2))
+
+        Note: You must have the directions as unit vectors, Dot(e1,e1)=1 and Dot(e2,e2)=1. 
+        The function Dot() is the vector dot product. The function Add() adds the components 
+        of vectors, and the function Scale() multiplies the components of the vector with a number.
+        */
+
+        float projection = Vector3.Dot(lineVec1.normalized, lineVec2.normalized);
+        //Debug.Log("proj:" + lineVec1.normalized);
+        if (projection != 1) {
+            float t1 = Vector3.Dot((linePoint2 - linePoint1), lineVec1.normalized);
+            float t2 = Vector3.Dot((linePoint2 - linePoint1), lineVec2.normalized);
+            float d1 = (t1 - (projection * t2)) / (1 - (projection * projection));
+            float d2 = (t2 - (projection * t1)) / ((projection * projection) - 1);
+            intersection = linePoint1 + (lineVec1.normalized * d1);
+            //Debug.Log("I:" + intersection);
+            return true;
+        } else {
+            intersection = Vector3.zero;
+            return false;
+        }
+
+        /*
         Vector3 lineVec3 = linePoint2 - linePoint1;
         Vector3 crossVec1and2 = Vector3.Cross(lineVec1, lineVec2);
         Vector3 crossVec3and2 = Vector3.Cross(lineVec3, lineVec2);
@@ -155,11 +200,13 @@ public class Grapher1 : MonoBehaviour {
             intersection = Vector3.zero;
             return false;
         }
+        */
     }
 
     public void GetAllRadius() {
         allRadius = new List<float>();
         radiusPos = new List<Vector3>();
+        midPoints = new List<Vector3>();
         Vector3 firstVec = new Vector3(0, 0, 0);
         Vector3 secondVec = new Vector3(0, 0, 0);
         Vector3 firstPoint = new Vector3(0, 0, 0);
@@ -167,30 +214,34 @@ public class Grapher1 : MonoBehaviour {
         Vector3 thirdPoint = new Vector3(0, 0, 0);
         float angle = 0;
         int m = 0;
+
         while (m < (linePoints.Count - 2)) { 
             firstVec = linePoints[m + 1] - linePoints[m];
             secondVec = linePoints[m + 2] - linePoints[m + 1];
-            angle = Vector3.Angle(firstVec, secondVec);
+            angle = Vector3.Angle(firstVec.normalized, secondVec.normalized);
+
             if (angle > angleThreshold) {
-                firstPoint = linePoints[m];
-                int l = m + 2;
+                int l = m + 1;
+                firstPoint = linePoints[l];
+
                 while (angle > angleThreshold && l < (linePoints.Count - 2)) {
                     firstVec = linePoints[l + 1] - linePoints[l];
                     secondVec = linePoints[l + 2] - linePoints[l + 1];
-                    angle = Vector3.Angle(firstVec, secondVec);
-                    secondPoint = linePoints[m + Mathf.FloorToInt((l - m) / 2)];
+                    angle = Vector3.Angle(firstVec.normalized, secondVec.normalized);
+                    secondPoint = linePoints[(m + 1) + Mathf.FloorToInt((l - (m + 1)) / 2)];
                     thirdPoint = linePoints[l];
                     l++;
                 }
+
                 float radius = GetRadius(firstPoint, secondPoint, thirdPoint);
-                Debug.Log(firstPoint);
-                Debug.Log(secondPoint);
-                Debug.Log(thirdPoint);
-                Debug.Log("res: " + radius);
+                //Debug.Log(firstPoint);
+                //Debug.Log(secondPoint);
+                //Debug.Log(thirdPoint);
+                //Debug.Log("res: " + radius);
                 if (radius != 0) {
                     allRadius.Add(radius);
                 }
-                m = l;
+                m = l - 1;
             }
             m++;
         }
@@ -215,10 +266,16 @@ public class Grapher1 : MonoBehaviour {
     }
 
     private void PlotRadius() {
-        radiusPoints = new ParticleSystem.Particle[allRadius.Count];
+        radiusPoints = new ParticleSystem.Particle[allRadius.Count + midPoints.Count];
         for(int i = 0; i < allRadius.Count; i++) {
             radiusPoints[i].position = radiusPos[i];
             radiusPoints[i].startColor = new Color(10f, 0f, 0f);
+            radiusPoints[i].startSize = 0.5f;
+        }
+
+        for (int i = allRadius.Count; i < allRadius.Count + midPoints.Count; i++) {
+            radiusPoints[i].position = midPoints[i - allRadius.Count];
+            radiusPoints[i].startColor = new Color(0f, 50f, 0f);
             radiusPoints[i].startSize = 0.5f;
         }
         GetComponent<ParticleSystem>().SetParticles(radiusPoints, radiusPoints.Length);
@@ -245,4 +302,5 @@ public class Grapher1 : MonoBehaviour {
         Debug.Log("Res: " + intPnt);
         */
     }
+
 }
