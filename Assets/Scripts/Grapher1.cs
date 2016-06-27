@@ -141,6 +141,7 @@ public class Grapher1 : MonoBehaviour {
             radius = Vector3.Magnitude(intersection - midp1);
             //Debug.Log("radius:" + radius);
             //Debug.Log("eixo" + axis1);
+            allRadius.Add(radius);
             radiusPos.Add(intersection);
             midPoints.Add(midp1);
             midPoints.Add(midp2);
@@ -177,7 +178,7 @@ public class Grapher1 : MonoBehaviour {
             float d1 = (t1 - (projection * t2)) / (1 - (projection * projection));
             float d2 = (t2 - (projection * t1)) / ((projection * projection) - 1);
             intersection = linePoint1 + (lineVec1.normalized * d1);
-            //Debug.Log("I:" + intersection);
+            Debug.Log("I:" + intersection);
             return true;
         } else {
             intersection = Vector3.zero;
@@ -228,19 +229,12 @@ public class Grapher1 : MonoBehaviour {
                     firstVec = linePoints[l + 1] - linePoints[l];
                     secondVec = linePoints[l + 2] - linePoints[l + 1];
                     angle = Vector3.Angle(firstVec.normalized, secondVec.normalized);
-                    secondPoint = linePoints[(m + 1) + Mathf.FloorToInt((l - (m + 1)) / 2)];
-                    thirdPoint = linePoints[l];
+                    secondPoint = linePoints[(m + 1) + Mathf.FloorToInt(((l + 2) - (m + 1)) / 2)];
+                    thirdPoint = linePoints[l + 2];
                     l++;
                 }
 
-                float radius = GetRadius(firstPoint, secondPoint, thirdPoint);
-                //Debug.Log(firstPoint);
-                //Debug.Log(secondPoint);
-                //Debug.Log(thirdPoint);
-                //Debug.Log("res: " + radius);
-                if (radius != 0) {
-                    allRadius.Add(radius);
-                }
+                GetRadius(firstPoint, secondPoint, thirdPoint);
                 m = l - 1;
             }
             m++;
@@ -269,6 +263,7 @@ public class Grapher1 : MonoBehaviour {
         radiusPoints = new ParticleSystem.Particle[allRadius.Count + midPoints.Count];
         for(int i = 0; i < allRadius.Count; i++) {
             radiusPoints[i].position = radiusPos[i];
+            Debug.Log("printing: " + radiusPos[i].x + " " + radiusPos[i].y);
             radiusPoints[i].startColor = new Color(10f, 0f, 0f);
             radiusPoints[i].startSize = 0.5f;
         }
