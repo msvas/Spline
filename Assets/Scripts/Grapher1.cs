@@ -21,7 +21,7 @@ public class Grapher1 : MonoBehaviour {
     private List<Vector3> radiusPos;
     private List<Vector3> midPoints;
 
-    private float angleThreshold = 3;
+    public float angleThreshold = 3;
 
     private bool ready = false;
 
@@ -280,7 +280,7 @@ public class Grapher1 : MonoBehaviour {
     private void SaveFile() {
         string content = "";
         for (int i = 0; i < allRadius.Count; i++) {
-            content += radiusPos[i].x + " " + radiusPos[i].x + " " + radiusPos[i].x + Environment.NewLine;
+            content += radiusPos[i].x + " " + radiusPos[i].y + " " + radiusPos[i].z + Environment.NewLine;
         }
         System.IO.File.WriteAllText("output.txt", content);
     }

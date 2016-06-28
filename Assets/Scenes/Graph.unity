@@ -375,6 +375,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   curvePoints: {fileID: 0}
   resolution: 10
+  angleThreshold: 3
 --- !u!199 &1286878023
 ParticleSystemRenderer:
   m_ObjectHideFlags: 0
