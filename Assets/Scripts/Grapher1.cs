@@ -9,6 +9,8 @@ public class Grapher1 : MonoBehaviour {
 
     public TextAsset curvePoints;
 
+    public Camera maincamera;
+
     private ParticleSystem.Particle[] radiusPoints;
 
     [Range(10, 100)]
@@ -18,6 +20,8 @@ public class Grapher1 : MonoBehaviour {
     private List<Vector3> linePoints;               // all points rendered on space, after catmull-rom processing
     private List<Vector3> pointsFromFile;           // simple points read from file
     private List<float> allRadius;                  // radius from each set of 3 points
+    private List<float> allAngles;                  // angles between radius vector and 0, 0, -1
+
     private List<Vector3> radiusPos;
     private List<Vector3> midPoints;
 
@@ -142,6 +146,7 @@ public class Grapher1 : MonoBehaviour {
             //Debug.Log("radius:" + radius);
             //Debug.Log("eixo" + axis1);
             allRadius.Add(radius);
+            allAngles.Add(Vector3.Angle(intersection - midp1, Vector3.back));
             radiusPos.Add(intersection);
             midPoints.Add(midp1);
             midPoints.Add(midp2);
@@ -206,6 +211,7 @@ public class Grapher1 : MonoBehaviour {
 
     public void GetAllRadius() {
         allRadius = new List<float>();
+        allAngles = new List<float>();
         radiusPos = new List<Vector3>();
         midPoints = new List<Vector3>();
         Vector3 firstVec = new Vector3(0, 0, 0);
@@ -280,9 +286,14 @@ public class Grapher1 : MonoBehaviour {
     private void SaveFile() {
         string content = "";
         for (int i = 0; i < allRadius.Count; i++) {
-            content += radiusPos[i].x + " " + radiusPos[i].y + " " + radiusPos[i].z + Environment.NewLine;
+            content += radiusPos[i].x + " " + radiusPos[i].y + " " + radiusPos[i].z + " " + allRadius[i] + " " + allAngles[i] + Environment.NewLine;
         }
         System.IO.File.WriteAllText("output.txt", content);
+    }
+
+    private void UpdateCamera() {
+        maincamera.transform.position = linePoints[0] + Vector3.one;
+        maincamera.transform.LookAt(linePoints[0]);
     }
 
     void Update() {
@@ -291,6 +302,7 @@ public class Grapher1 : MonoBehaviour {
             GetAllRadius();
             PlotRadius();
             SaveFile();
+            UpdateCamera();
         }
         /*
         Vector3 intPnt = new Vector3();
