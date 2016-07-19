@@ -7,6 +7,8 @@ using System.Collections.Generic;
 public class Grapher1 : MonoBehaviour {
     private int pointsTotal = 4;
 
+    public float speed = 5;
+
     public TextAsset curvePoints;
 
     public Camera maincamera;
@@ -46,17 +48,19 @@ public class Grapher1 : MonoBehaviour {
     }
 
     private void ReadPointsFromFile() {
-        string text = curvePoints.text;
+        string text = System.IO.File.ReadAllText("pointsdata.txt");
         string[] fLines = text.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
 
-        pointsTotal = fLines.Length;
-        line.SetVertexCount((pointsTotal - 3) * resolution);
-
         for (int i = 0; i < fLines.Length; i++) {
-            string valueLine = fLines[i];
-            string[] pointsRead = Regex.Split(valueLine, @"\s+");
-            pointsFromFile.Add(new Vector3(float.Parse(pointsRead[0]), float.Parse(pointsRead[1]), float.Parse(pointsRead[2])));
+            if (fLines[i] != "") {
+                string valueLine = fLines[i];
+                string[] pointsRead = Regex.Split(valueLine, @"\s+");
+                pointsFromFile.Add(new Vector3(float.Parse(pointsRead[0]), float.Parse(pointsRead[1]), float.Parse(pointsRead[2])));
+            }
         }
+
+        pointsTotal = pointsFromFile.Count;
+        line.SetVertexCount((pointsTotal - 3) * resolution);
     }
 
     private Vector3 calculatePoints(float t, Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3) {
@@ -129,11 +133,11 @@ public class Grapher1 : MonoBehaviour {
 
         Vector3 midp1 = (((p2 - p1) / 2f) + p1);
         Vector3 midp2 = (((p3 - p2) / 2f) + p2);
-        Debug.Log("p1: " + p1.x + " " + p1.y);
-        Debug.Log("p2 " + p2.x + " " + p2.y);
-        Debug.Log("p3 " + p3.x + " " + p3.y);
-        Debug.Log("m1 " + midp1.x + " " + midp1.y);
-        Debug.Log("m2 " + midp2.x + " " + midp2.y);
+        //Debug.Log("p1: " + p1.x + " " + p1.y);
+        //Debug.Log("p2 " + p2.x + " " + p2.y);
+        //Debug.Log("p3 " + p3.x + " " + p3.y);
+        //Debug.Log("m1 " + midp1.x + " " + midp1.y);
+        //Debug.Log("m2 " + midp2.x + " " + midp2.y);
         Vector3 normal = Vector3.Cross(Vector3.Normalize(p2 - midp1), Vector3.Normalize(p3 - midp2));
 
         //Debug.Log("eixo" + normal.normalized);
@@ -183,30 +187,12 @@ public class Grapher1 : MonoBehaviour {
             float d1 = (t1 - (projection * t2)) / (1 - (projection * projection));
             float d2 = (t2 - (projection * t1)) / ((projection * projection) - 1);
             intersection = linePoint1 + (lineVec1.normalized * d1);
-            Debug.Log("I:" + intersection);
+            //Debug.Log("I:" + intersection);
             return true;
         } else {
             intersection = Vector3.zero;
             return false;
         }
-
-        /*
-        Vector3 lineVec3 = linePoint2 - linePoint1;
-        Vector3 crossVec1and2 = Vector3.Cross(lineVec1, lineVec2);
-        Vector3 crossVec3and2 = Vector3.Cross(lineVec3, lineVec2);
-
-        float planarFactor = Vector3.Dot(lineVec3, crossVec1and2);
-
-        //is coplanar, and not parrallel
-        if (Mathf.Abs(planarFactor) < 0.0001f) { // && crossVec1and2.sqrMagnitude > 0.0001f) {
-            float s = Vector3.Dot(crossVec3and2, crossVec1and2) / crossVec1and2.sqrMagnitude;
-            intersection = linePoint1 + (lineVec1 * s);
-            return true;
-        } else {
-            intersection = Vector3.zero;
-            return false;
-        }
-        */
     }
 
     public void GetAllRadius() {
@@ -245,31 +231,13 @@ public class Grapher1 : MonoBehaviour {
             }
             m++;
         }
-        /*
-        while (k != linePoints.Count) {
-            float radius = GetRadius(linePoints[i], linePoints[Mathf.FloorToInt(k / 2)], linePoints[k]);
-
-            if(radius == 0) {
-                k++;
-            } else {
-                
-                Debug.Log(linePoints[i]);
-                Debug.Log(linePoints[Mathf.FloorToInt(k / 2)]);
-                Debug.Log(linePoints[k]);
-                Debug.Log("res: " + radius);
-                
-                allRadius.Add(radius);
-                i = k;
-            }
-        }
-       */
     }
 
     private void PlotRadius() {
         radiusPoints = new ParticleSystem.Particle[allRadius.Count + midPoints.Count];
         for(int i = 0; i < allRadius.Count; i++) {
             radiusPoints[i].position = radiusPos[i];
-            Debug.Log("printing: " + radiusPos[i].x + " " + radiusPos[i].y);
+            //Debug.Log("printing: " + radiusPos[i].x + " " + radiusPos[i].y);
             radiusPoints[i].startColor = new Color(10f, 0f, 0f);
             radiusPoints[i].startSize = 0.5f;
         }
@@ -291,9 +259,36 @@ public class Grapher1 : MonoBehaviour {
         System.IO.File.WriteAllText("output.txt", content);
     }
 
+    private void SaveCoeffsFile(double[] coeffs) {
+        string content = "";
+        for (int i = 0; i < pointsFromFile.Count; i++) {
+            content += coeffs[i] + Environment.NewLine;
+        }
+        System.IO.File.WriteAllText("coeffs.txt", content);
+    }
+
     private void UpdateCamera() {
         maincamera.transform.position = linePoints[0] + Vector3.one;
         maincamera.transform.LookAt(linePoints[0]);
+    }
+
+    private void GetInterpolationCoeffs() {
+        double[] z = new double[pointsFromFile.Count];
+        double[] t = new double[pointsFromFile.Count];
+
+        double[] coeffs = new double[pointsFromFile.Count];
+        alglib.barycentricinterpolant p;
+
+        for (int i = 0; i < pointsFromFile.Count; i++) {
+            z[i] = pointsFromFile[i].z;
+            t[i] = pointsFromFile[i].z / speed;
+        }
+
+        // barycentric model is created
+        alglib.polynomialbuild(z, t, out p);
+        alglib.polynomialbar2pow(p, out coeffs);
+
+        SaveCoeffsFile(coeffs);
     }
 
     void Update() {
@@ -302,21 +297,9 @@ public class Grapher1 : MonoBehaviour {
             GetAllRadius();
             PlotRadius();
             SaveFile();
+            GetInterpolationCoeffs();
             UpdateCamera();
         }
-        /*
-        Vector3 intPnt = new Vector3();
-        Vector3 p1 = new Vector3(0, 0, 0);
-        Vector3 p2 = new Vector3(1, 1, 0);
-        Vector3 p3 = new Vector3(3, 0, 0);
-        Vector3 midp1 = 0.5f * (p1 + p2);
-        Vector3 midp2 = 0.5f * (p2 + p3);
-        Vector3 normal = Vector3.Cross(p2 - p1, p3 - p2);
-        Vector3 axis1 = Vector3.Cross((p2 - p1), normal);
-        Vector3 axis2 = Vector3.Cross((p3 - p2), normal);
-        LineLineIntersection(out intPnt, midp1, axis1, midp2, axis2);
-        Debug.Log("Res: " + intPnt);
-        */
     }
 
 }
