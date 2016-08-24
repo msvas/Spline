@@ -26,6 +26,7 @@ public class Grapher1 : MonoBehaviour {
 
     private List<Vector3> radiusPos;
     private List<Vector3> midPoints;
+    private List<Vector3> beginEndPoints;
 
     public float angleThreshold = 3;
 
@@ -55,6 +56,7 @@ public class Grapher1 : MonoBehaviour {
             if (fLines[i] != "") {
                 string valueLine = fLines[i];
                 string[] pointsRead = Regex.Split(valueLine, @"\s+");
+                Debug.Log("Reading point " + pointsRead[0] + " " + pointsRead[1] + " " + pointsRead[2]);
                 pointsFromFile.Add(new Vector3(float.Parse(pointsRead[0]), float.Parse(pointsRead[1]), float.Parse(pointsRead[2])));
             }
         }
@@ -154,6 +156,8 @@ public class Grapher1 : MonoBehaviour {
             radiusPos.Add(intersection);
             midPoints.Add(midp1);
             midPoints.Add(midp2);
+            beginEndPoints.Add(p1);
+            beginEndPoints.Add(p3);
         }
         return radius;
     }
@@ -200,6 +204,7 @@ public class Grapher1 : MonoBehaviour {
         allAngles = new List<float>();
         radiusPos = new List<Vector3>();
         midPoints = new List<Vector3>();
+        beginEndPoints = new List<Vector3>();
         Vector3 firstVec = new Vector3(0, 0, 0);
         Vector3 secondVec = new Vector3(0, 0, 0);
         Vector3 firstPoint = new Vector3(0, 0, 0);
@@ -267,6 +272,15 @@ public class Grapher1 : MonoBehaviour {
         System.IO.File.WriteAllText("coeffs.txt", content);
     }
 
+    private void SaveBeginEndFile() {
+        string content = "";
+        for (int i = 0; i < (beginEndPoints.Count - 1); i = i + 2) {
+            content += beginEndPoints[i].x + " " + beginEndPoints[i].y + " " + beginEndPoints[i].z + " 1 " + allRadius[i/2] + Environment.NewLine;
+            content += beginEndPoints[i + 1].x + " " + beginEndPoints[i + 1].y + " " + beginEndPoints[i + 1].z + " 0 " + allRadius[i/2] + Environment.NewLine;
+        }
+        System.IO.File.WriteAllText("beginend.txt", content);
+    }
+
     private void UpdateCamera() {
         maincamera.transform.position = linePoints[0] + Vector3.one;
         maincamera.transform.LookAt(linePoints[0]);
@@ -297,7 +311,8 @@ public class Grapher1 : MonoBehaviour {
             GetAllRadius();
             PlotRadius();
             SaveFile();
-            GetInterpolationCoeffs();
+            SaveBeginEndFile();
+            //GetInterpolationCoeffs();
             UpdateCamera();
         }
     }
